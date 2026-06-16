@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Expense Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="container">
+    <div class="card">
+        <div class="header">
+    <h1>Expense Dashboard</h1>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+</div>
+        <p class="subtitle">Track your spending summary and expenses.</p>
+
+        <div class="summary">
+            <h2 id="totalAmount">$0.00</h2>
+            <p>Total Expenses</p>
+            <h3 id="expenseCount">0 Expenses</h3>
+        </div>
+
+        <h2>Add Expense</h2>
+
+        <input id="title" placeholder="Expense title">
+        <input id="amount" type="number" placeholder="Amount">
+        <input id="category" placeholder="Category">
+
+        <button class="primary-btn" onclick="addExpense()">Add Expense</button>
+
+        <h2>Expense List</h2>
+        <div id="expenseList"></div>
+    </div>
+</div>
+
+<script>
+function logout() {
+    window.location.href = "/app";
+}
+async function loadDashboard() {
+    const totalResponse = await fetch("/expenses/total");
+    const totalData = await totalResponse.json();
+
+    document.getElementById("totalAmount").innerText =
+        "$" + totalData.total_amount.toFixed(2); 
+
+    document.getElementById("expenseCount").innerText =
+        totalData.number_of_expenses + " Expenses";
+
+    const expenseResponse = await fetch("/expenses");
+    const expenses = await expenseResponse.json();
+
+    const list = document.getElementById("expenseList");
+    list.innerHTML = "";
+
+    expenses.forEach(expense => {
+        list.innerHTML += `
+            <div class="expense-card">
+                <div class="expense-header">
+                    <h3>${expense.title}</h3>
+                    <span>$${expense.amount.toFixed(2)}</span>
+                </div>
+
+                <p>Category: ${expense.category}</p>
+
+                <button class="delete-btn" onclick="deleteExpense(${expense.id})">
+                    Delete
+                </button>
+            </div>
+        `;
+    });
+}
+
+async function addExpense() {
+    await fetch("/expenses", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            title: document.getElementById("title").value,
+            amount: parseFloat(document.getElementById("amount").value),
+            category: document.getElementById("category").value
+        })
+    });
+
+    document.getElementById("title").value = "";
+    document.getElementById("amount").value = "";
+    document.getElementById("category").value = "";
+
+    loadDashboard();
+}
+
+async function deleteExpense(expenseId) {
+    await fetch(`/expenses/${expenseId}`, {
+        method: "DELETE"
+    });
+
+    loadDashboard();
+}
+
+loadDashboard();
+</script>
+
+</body>
+</html>
